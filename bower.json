@@ -1,0 +1,24 @@
+{
+  "name": "BIGDIVE4",
+  "version": "0.0.0",
+  "homepage": "https://github.com/openp2pdesign/BIGDIVE4",
+  "authors": [
+    "Massimo Menichinelli <info@openp2pdesign.org>"
+  ],
+  "description": "Notes and exercises from attending Big Dive 4",
+  "main": "index.html",
+  "keywords": [
+    "data"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "d3": "~3.5.5"
+  }
+}
