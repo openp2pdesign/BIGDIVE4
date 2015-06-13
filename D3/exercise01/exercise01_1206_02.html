@@ -2,8 +2,9 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Untitled Document</title>
-    <script src="bower_components/d3/d3.min.js"></script>
+    <title>D3 Exercise 01. Second test</title>
+    <link href='http://fonts.googleapis.com/css?family=PT+Sans:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <script src="../../bower_components/d3/d3.min.js"></script>
     <style>
         h1 {font-family: 'PT Sans';}
         body {padding: 20px;}
@@ -192,7 +193,6 @@ svg.select("#gold")
             .selectAll("circle")
             .transition()
             .delay(200)
-            .style("opacity","0.5")
             .attr("r", function(d, i) {
                 return coll_scale(d["values"]["collaborative"]);  
             });
@@ -206,7 +206,6 @@ svg.select("#gold")
             .selectAll("circle")
             .transition()
             .delay(200)
-            .style("opacity","1")
             .attr("r", radius);
 });
 
@@ -219,7 +218,6 @@ svg.select("#silver")
             .selectAll("circle")
             .transition()
             .delay(200)
-            .style("opacity","0.5")
             .attr("r", function(d, i) {
                 return coll_scale(d["values"]["collaborative"]);  
             });
@@ -233,7 +231,6 @@ svg.select("#silver")
             .selectAll("circle")
             .transition()
             .delay(200)
-            .style("opacity","1")
             .attr("r", radius);
 });
     
