@@ -1,0 +1,301 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>D3 Exercise 01. Second test</title>
+    <link href='http://fonts.googleapis.com/css?family=PT+Sans:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <script src="../../bower_components/d3/d3.min.js"></script>
+    <style>
+        h1 {font-family: 'PT Sans';}
+        body {padding: 20px;}
+    </style>
+</head>
+<body>
+<h1>Team vs individual sports and number of medals at Olympic Games 2012</h1>
+<select></select>
+<svg style="margin: 20px;"></svg>
+
+<script>
+
+d3.csv("olympics_individual.csv", function(data) {
+    
+    
+// Upgrade data
+    
+function makeSum(d,which) {
+         return d3.sum(d, function(c) {
+                 return +c[which];
+         })
+        }    
+  
+
+for (i = 0; i < data.length; i++) {
+
+ data[i]["collaborative"] = 0;
+
+ if (data[i]["Medals"] === "YES") {
+
+     if (data[i]["individual_gold"] == false) {
+    data[i]["collaborative"] += 1; 
+     } 
+
+     if (data[i]["individual_silver"] == false) {
+    data[i]["collaborative"] += 1; 
+     } 
+
+     if (data[i]["individual_bronze"] == false) {
+    data[i]["collaborative"] += 1; 
+     } 
+
+ }
+}
+
+
+    
+var data2 = d3.nest()
+    .key(function(d) { 
+        return d["Country"];
+        })
+    .rollup(function(d) {
+        return {
+            gold_medals:makeSum(d, "Gold"),
+            silver_medals:makeSum(d, "Silver"),
+            bronze_medals:makeSum(d, "Bronze"),
+            collaborative:makeSum(d, "collaborative")
+            
+        }
+    })
+    .entries(data);  
+    
+    
+// Setup
+var svg = d3.select("svg");
+    
+var w = 800;
+var h = 1600;
+var labelMargin = 180;
+var margin = 0;
+var radius = 4;
+var group_size = 5;
+    
+svg
+    .attr("width",w)
+    .attr("height",data2.length*group_size*8)
+    .style("margin","10")
+    .style("padding","10");
+        
+    
+// Set up scales
+    
+var x_extent = d3.extent(data2, function(d) {
+	return Math.max(d["values"]["gold_medals"],d["values"]["silver_medals"],d["values"]["bronze_medals"]);
+	});
+    
+var y_extent = [0,data2.length];
+    
+var coll_extent = d3.extent(data2, function(d) {
+	return d["values"]["collaborative"];
+	});
+    
+var x_scale = d3.scale.linear() 
+	.range([labelMargin,w-labelMargin]) 
+	.domain(x_extent);
+    
+var y_scale = d3.scale.linear() 
+	.range([h-margin, margin]) 
+	.domain(y_extent);
+    
+var coll_scale = d3.scale.linear() 
+	.range([radius, 30]) 
+	.domain(coll_extent);
+   
+    
+// Alphabetically order data
+data2.sort(function(a,b) { 
+    return d3.ascending(a["key"],b["key"]); 
+    });
+
+
+// Dropdown list
+d3
+    .select("select")
+    .selectAll("option")
+    .data(data2)
+    .enter()
+    .append("option")
+    .attr("value", function(d) {
+    
+        return d["key"];
+    })
+    .text(function(d) {
+    
+        return d["key"];
+    })
+    
+// Its interaction
+d3.select("select")
+    .on('change', function() {
+    console.log(d3.select(this).property('value'));
+});
+    
+    
+// Draw circles
+    
+// Gold
+svg
+    .append("g")
+    .attr("id","gold")
+    .selectAll("circle")
+    .data(data2)
+    .enter()
+    .append("circle")
+    .style("fill","#d6b059")
+    .attr("cx", function(d, i) {
+            return  x_scale(d["values"]["gold_medals"]);
+        })
+    .attr("cy", function(d, i) {
+            return y_scale(i)*group_size;   
+        })
+    .attr("r", radius);
+   
+    
+// Silver
+svg
+    .append("g")
+    .attr("id","silver")
+    .selectAll("circle")
+    .data(data2)
+    .enter()
+    .append("circle")
+    .style("fill","#807d7d")
+    .attr("cx", function(d, i) {
+            return  x_scale(d["values"]["silver_medals"]);
+        })
+    .attr("cy", function(d, i) {
+            return 10+y_scale(i)*group_size;   
+        })
+    .attr("r", radius);
+    
+    
+// Bronze
+svg
+    .append("g")
+    .attr("id","bronze")
+    .selectAll("circle")
+    .data(data2)
+    .enter()
+    .append("circle")
+    .style("fill","#d08759")
+    .attr("cx", function(d, i) {
+            return  x_scale(d["values"]["bronze_medals"]);
+        })
+    .attr("cy", function(d, i) {
+            return 20+y_scale(i)*group_size;    
+        })
+    .attr("r", radius);
+
+    
+// Country names
+svg
+    .selectAll(".countries")
+    .data(data2)
+    .enter()
+    .append("text")
+    .style("fill","black")
+    .text(function(d, i) {
+            return  d["key"];
+        })
+    .attr("x", 0)
+    .attr("y", function(d, i) {
+            return y_scale(i)*group_size;  
+        })
+    .style("font-size", 2*group_size)
+    .style("font-family", "PT Sans");
+
+    
+// Interactions
+    
+// Scale gold medals according to collaboration level
+svg.select("#gold")
+    .selectAll("circle")
+    .on("mouseover", function() {
+        svg.select("#gold")
+            .selectAll("circle")
+            .transition()
+            .delay(200)
+            .attr("r", function(d, i) {
+                return coll_scale(d["values"]["collaborative"]);  
+            });
+        });
+
+// Scale back gold medals to default
+svg.select("#gold")
+    .selectAll("circle")
+    .on("mouseout", function() {
+        svg.select("#gold")
+            .selectAll("circle")
+            .transition()
+            .delay(200)
+            .attr("r", radius);
+});
+
+    
+// Scale silver medals according to collaboration level
+svg.select("#silver")
+    .selectAll("circle")
+    .on("mouseover", function() {
+        svg.select("#silver")
+            .selectAll("circle")
+            .transition()
+            .delay(200)
+            .attr("r", function(d, i) {
+                return coll_scale(d["values"]["collaborative"]);  
+            });
+        });
+
+// Scale back gold medals to default
+svg.select("#silver")
+    .selectAll("circle")
+    .on("mouseout", function() {
+        svg.select("#silver")
+            .selectAll("circle")
+            .transition()
+            .delay(200)
+            .attr("r", radius);
+});
+    
+// Scale bronze medals according to collaboration level
+svg.select("#bronze")
+    .selectAll("circle")
+    .on("mouseover", function() {
+        svg.select("#bronze")
+            .selectAll("circle")
+            .transition()
+            .delay(200)
+            .attr("r", function(d, i) {
+                return coll_scale(d["values"]["collaborative"]);  
+            });
+        });
+
+// Scale back bronze medals to default
+svg.select("#bronze")
+    .selectAll("circle")
+    .on("mouseout", function() {
+        svg.select("#bronze")
+            .selectAll("circle")
+            .transition()
+            .delay(200)
+            .attr("r", radius);
+});
+
+                            
+            
+
+});
+    
+    
+</script>
+
+
+</body>
+</html>
