@@ -1,0 +1,185 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Untitled Document</title>
+    <script src="bower_components/d3/d3.min.js"></script>
+    <style>
+    axis path{ fill:none; stroke: black; stroke-width: 0.5px; }
+    .axis { font-size:6pt; font-family:"PT Sans"; stroke-width: 0.5px;}
+.tick { fill:none; stroke:black; }
+    </style>
+</head>
+<body>
+<svg style="margin: 20px;"></svg>
+
+<script>
+
+d3.csv("olympics_individual.csv", function(data) {
+    
+    
+// Setup
+var svg = d3.select("svg");
+    
+var w = 800;
+var h = 1600;
+var labelMargin = 120;
+var margin = 0;
+    
+svg
+    .attr("width",w)
+    .attr("height",h)
+    .style("margin","10")
+    .style("padding","20")
+    .style("border","1px solid silver");
+    
+    
+// Try nesting data
+    
+    
+function makeSum(d,which) {
+         return d3.sum(d, function(c) {
+                 return +c[which];
+         })
+        }    
+  
+function checkIndividual(d) {
+         for (i = 0; i < d.length; i++) {
+             //console.log(d[i]);
+             //console.log(d[i]["Country"]);
+             //console.log(d[i]["individual_gold"]);
+             //console.log(d[i]["individual_silver"]);
+         }
+        } 
+checkIndividual(data);
+
+    
+var data2 = d3.nest()
+    .key(function(d) { 
+        return d["Country"];
+        })
+    .rollup(function(d) {
+        return {
+            gold_medals:makeSum(d, "Gold"),
+            silver_medals:makeSum(d, "Silver"),
+            bronze_medals:makeSum(d, "Bronze"),
+            individual_gold:makeSum(d, "Gold")
+            
+        }
+    })
+    .entries(data);  
+    
+    console.log(data2[0]);
+        
+    
+// Set up scales
+    
+var x_extent = d3.extent(data2, function(d) {
+	return Math.max(d["values"]["gold_medals"],d["values"]["silver_medals"],d["values"]["bronze_medals"]);
+	});
+    
+var y_extent = [0,data2.length];
+    
+var x_scale = d3.scale.linear() 
+	.range([labelMargin,w-labelMargin]) 
+	.domain(x_extent);
+    
+var y_scale = d3.scale.linear() 
+	.range([h-margin, margin]) 
+	.domain(y_extent);
+   
+    
+// Draw circles
+    
+// Gold
+svg
+    .selectAll(".gold")
+    .data(data2)
+    .enter()
+    .append("circle")
+    .style("fill","#d6b059")
+    .attr("cx", function(d, i) {
+            return  x_scale(d["values"]["gold_medals"]);
+        })
+    .attr("cy", function(d, i) {
+            return y_scale(i);  
+        })
+    .attr("r", 2);
+   
+    
+// Silver
+svg
+    .selectAll(".silver")
+    .data(data2)
+    .enter()
+    .append("circle")
+    .style("fill","#807d7d")
+    .attr("cx", function(d, i) {
+            return  x_scale(d["values"]["silver_medals"]);
+        })
+    .attr("cy", function(d, i) {
+            return y_scale(i);  
+        })
+    .attr("r", 2);
+    
+    
+// Bronze
+svg
+    .selectAll(".bronze")
+    .data(data2)
+    .enter()
+    .append("circle")
+    .style("fill","#d08759")
+    .attr("cx", function(d, i) {
+            return  x_scale(d["values"]["bronze_medals"]);
+        })
+    .attr("cy", function(d, i) {
+            return y_scale(i);  
+        })
+    .attr("r", 2);
+
+    
+// Country names
+svg
+    .selectAll(".countries")
+    .data(data2)
+    .enter()
+    .append("text")
+    .style("fill","black")
+    .text(function(d, i) {
+            return  d["key"];
+        })
+    .attr("x", 0)
+    .attr("y", function(d, i) {
+            return y_scale(i);  
+        })
+    .style("font-size", 5)
+    .style("font-family", "PT Sans");
+
+// Interaction... later
+/*d3.selectAll("circle")
+        .on("mouseover", function() {
+            d3.selectAll("circle")
+                .attr("r", function(d, i) {
+                    return 2 + d["Age"];
+                });
+        });
+
+d3.selectAll("circle")
+        .on("mouseout", function() {
+            d3.selectAll("circle")
+                .attr("r", 2);
+        });*/
+
+
+                            
+            
+
+});
+    
+    
+</script>
+
+
+</body>
+</html>
