@@ -1,0 +1,323 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>D3 Exercise 01. Second test</title>
+    <link href='http://fonts.googleapis.com/css?family=PT+Sans:400,700,400italic,700italic' rel='stylesheet' type='text/css'>
+    <script src="../../bower_components/d3/d3.min.js"></script>
+    <style>
+        h1 {
+            font-family: 'PT Sans';
+        }
+        
+        body {
+            padding: 20px;
+        }
+    </style>
+</head>
+
+<body style="font-family: 'PT Sans';">
+
+    <h1>Team vs individual sports and number of medals at Olympic Games 2012</h1>
+    <h2 id="country_name">Please choose a country</h2>
+
+    <select></select>
+
+    <div id="graph">
+        <svg></svg>
+    </div>
+
+
+
+    <script>
+        d3.csv("olympics_individual.csv", function (data) {
+            
+            // Function for summing values in the rollup
+            function makeSum(d, which) {
+                return d3.sum(d, function (c) {
+                    return +c[which];
+                })
+            }
+
+            // Calculate team sport index
+            for (i = 0; i < data.length; i++) {
+
+                data[i]["collaborative"] = 0;
+
+                if (data[i]["Medals"] === "YES") {
+
+                    if (data[i]["individual_gold"] == false) {
+                        data[i]["collaborative"] += 1;
+                    }
+
+                    if (data[i]["individual_silver"] == false) {
+                        data[i]["collaborative"] += 1;
+                    }
+
+                    if (data[i]["individual_bronze"] == false) {
+                        data[i]["collaborative"] += 1;
+                    }
+
+                }
+            }
+
+
+            // Value of medals and collaboration by country
+            var data2 = d3.nest()
+                .key(function (d) {
+                    return d["Country"];
+                })
+                .rollup(function (d) {
+                    return {
+                        gold_medals: makeSum(d, "Gold"),
+                        silver_medals: makeSum(d, "Silver"),
+                        bronze_medals: makeSum(d, "Bronze"),
+                        collaborative: makeSum(d, "collaborative")
+
+                    }
+                })
+                .entries(data);
+
+
+            // Value of medals and collaboration by country and by sport
+            var data3 = d3.nest()
+                .key(function (d) {
+                    return d["Country"];
+                })
+                .key(function (d) {
+                    return d["Sport"];
+                })
+                .rollup(function (d) {
+                    return {
+                        gold_medals: makeSum(d, "Gold"),
+                        silver_medals: makeSum(d, "Silver"),
+                        bronze_medals: makeSum(d, "Bronze"),
+                        collaborative: makeSum(d, "collaborative")
+
+                    }
+                })
+                .entries(data);
+
+
+            // Setup
+            var w = 800;
+            var h = 800;
+            var labelMargin = 180;
+            var margin = 0;
+            var radius = 4;
+            var group_size = 5;
+            
+            // Function for adding a SVG tag
+            function addSVG() {
+                d3.select("#graph")
+                    .append("svg")
+                    .attr("width", w)
+                    .attr("height", data2.length * group_size * 8)
+                    .style("margin", "10")
+                    .style("padding", "10");
+            }
+
+            // Alphabetically order data
+            data2.sort(function (a, b) {
+                return d3.ascending(a["key"], b["key"]);
+            });
+
+
+            // Dropdown list for countries
+            d3
+                .select("select")
+                .selectAll("option")
+                .data(data2)
+                .enter()
+                .append("option")
+                .attr("value", function (d) {
+                    return d["key"];
+                })
+                .text(function (d) {
+                    return d["key"];
+                })
+
+            // Interaction settings for the dropdown
+            d3.select("select")
+                .on('change', function () {
+                    var choice = d3.select(this).property('value');
+                    d3.select("svg").remove();
+                    addSVG();
+                    drawViz(choice);
+                });
+
+            // The function that draws a visualization for a specific country
+            function drawViz(choice) {
+
+
+                // A variable for accessing the country from the index
+                var choice_id = 0;
+
+                // Find the id of the choice by reding the "key" value
+                for (var country_name in data3) {
+                    if (data3[country_name]["key"] === choice) {
+                        choice_id = country_name;
+                    }
+                }
+
+
+                var svg = d3.select("svg");
+
+                // Customize the new svg with height based on the number of sports presents for the specific country
+                h = data3[choice_id]["values"].length * 30;
+                svg
+                    .attr("height", h)
+                    .style("border", "1px solid #a8a8a8");
+
+
+                // Setup for the specific country
+                var x_extent = d3.extent(data2, function (d) {
+                    return Math.max(d["values"]["gold_medals"], d["values"]["silver_medals"], d["values"]["bronze_medals"]);
+
+                });
+
+                var y_extent = [0, data3[choice_id]["values"].length];
+
+                var coll_extent = d3.extent(data2, function (d) {
+                    return d["values"]["collaborative"];
+                });
+
+                var x_scale = d3.scale.linear()
+                    .range([labelMargin, w - labelMargin])
+                    .domain(x_extent);
+
+                var y_scale = d3.scale.linear()
+                    .range([h - margin, margin])
+                    .domain(y_extent);
+
+                var coll_scale = d3.scale.linear()
+                    .range([radius, 30])
+                    .domain(coll_extent);
+
+                // Add the viz
+
+                // Add title.. simple html, no svg
+                var country_chosen =
+                    d3.select("#country_name")
+                    .text(data3[choice_id]["key"]);
+
+                // Creating groups
+                // Nested data can be accessed hierarchically by using groups and .data(function (d) {return [d];}) for the children of the group
+                // The more the data is nested, the more the groups
+                // Example: https://lifeasclay.wordpress.com/2013/09/15/nested-arrays-in-d3-js/
+                // Add groups for the sports presents for the specific country in the dataset
+                var sports = svg
+                    .selectAll(".sport")
+                    .data(data3[choice_id]["values"])
+                    .enter()
+                    .append("g")
+                    .attr("class", "sport");
+
+                // Add a text label for each sport
+                var labels = sports
+                    .selectAll(".sport_label")
+                    .data(function (d) {
+                        return [d];
+                    })
+                    .enter()
+                    .append("text")
+                    .attr("x", 0)
+                    .attr("y", function (d, i, j) {
+                        // j is the index of the object in the parent data!
+                        return y_scale(j);
+                    })
+                    .style("font-size", 10)
+                    .style("color", "red")
+                    .style("font-family", "PT Sans")
+                    .text(function (d, i, j) {
+                        return d["key"];
+                    });
+
+
+                // Add gold medals circles
+                var gold = sports.selectAll(".gold_medals")
+                    .data(function (d, i, j) {
+                        // must be an array, so if it's only an element you need to enclose in []
+                        return [d];
+                    })
+                    .enter()
+                    .append("circle")
+                    .style("fill", "#d6b059")
+                    .attr("opacity", 0.5)
+                    .attr("cx", function (d, i) {
+
+                        return x_scale(d["values"]["gold_medals"]);
+
+                    })
+                    .attr("cy", function (d, i, j) {
+                        // j is the parent index
+                        return y_scale(j)-5;
+                    })
+                    .attr("r", function (d, i) {
+                        if (d["values"]["collaborative"] > 0) {
+                        return coll_scale(d["values"]["collaborative"]);
+                        } else {return 0;}
+                    });
+                
+                
+                // Add silver medals circles
+                var silver = sports.selectAll(".silver_medals")
+                    .data(function (d, i, j) {
+                        // must be an array, so if it's only an element you need to enclose in []
+                        return [d];
+                    })
+                    .enter()
+                    .append("circle")
+                    .style("fill", "#807d7d")
+                    .attr("opacity", 0.5)
+                    .attr("cx", function (d, i) {
+
+                        return x_scale(d["values"]["silver_medals"]);
+
+                    })
+                    .attr("cy", function (d, i, j) {
+                        // j is the parent index
+                        return y_scale(j)-10;
+                    })
+                    .attr("r", function (d, i) {
+                        if (d["values"]["collaborative"] > 0) {
+                        return coll_scale(d["values"]["collaborative"]);
+                        } else {return 0;}
+                    });
+                
+                
+                // Add bronze medals circles
+                var bronze = sports.selectAll(".bronze_medals")
+                    .data(function (d, i, j) {
+                        // must be an array, so if it's only an element you need to enclose in []
+                        return [d];
+                    })
+                    .enter()
+                    .append("circle")
+                    .style("fill", "#d08759")
+                    .attr("opacity", 0.5)
+                    .attr("cx", function (d, i) {
+
+                        return x_scale(d["values"]["bronze_medals"]);
+
+                    })
+                    .attr("cy", function (d, i, j) {
+                        // j is the parent index
+                        return y_scale(j)-15;
+                    })
+                    .attr("r", function (d, i) {
+                        if (d["values"]["collaborative"] > 0) {
+                        return coll_scale(d["values"]["collaborative"]);
+                        } else {return 0;}
+                    });
+
+                
+            }
+        });
+    </script>
+
+
+</body>
+
+</html>
