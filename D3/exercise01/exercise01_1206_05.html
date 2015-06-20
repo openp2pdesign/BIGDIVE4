@@ -245,6 +245,9 @@
                     .append("circle")
                     .style("fill", "#d6b059")
                     .attr("opacity", 0.5)
+                    .attr("cx", 0)
+                    .transition()
+                    .duration(800)
                     .attr("cx", function (d, i) {
 
                         return x_scale(d["values"]["gold_medals"]);
@@ -271,6 +274,9 @@
                     .append("circle")
                     .style("fill", "#807d7d")
                     .attr("opacity", 0.5)
+                    .attr("cx", 0)
+                    .transition()
+                    .duration(800)
                     .attr("cx", function (d, i) {
 
                         return x_scale(d["values"]["silver_medals"]);
@@ -297,6 +303,9 @@
                     .append("circle")
                     .style("fill", "#d08759")
                     .attr("opacity", 0.5)
+                    .attr("cx", 0)
+                    .transition()
+                    .duration(800)
                     .attr("cx", function (d, i) {
 
                         return x_scale(d["values"]["bronze_medals"]);
